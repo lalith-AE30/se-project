@@ -1,5 +1,15 @@
 # Quick Start Guide
 
+## 0. Setup (Optional)
+
+### Populate Database with Mock Data
+For a fully-featured demo experience with sample policies and claims:
+```bash
+npm run populate-db
+```
+
+This adds 5 policies, 6 claims, notifications, and more. See `MOCK_DATA.md` for details.
+
 ## 1. Login
 Visit http://localhost:3000 and login with any demo account:
 - **Customer**: customer@test.com

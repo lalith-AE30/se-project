@@ -53,14 +53,25 @@ All accounts use password: `password123`
 npm install
 ```
 
-2. Run the development server:
+2. Populate the database with mock data (optional):
+```bash
+npm run populate-db
+```
+This will add:
+- 5 sample policies (pending, active, expired states)
+- 6 sample claims (approved, rejected, under review, flagged)
+- 8 notifications across all users
+- SLA tracking records
+- Audit log entries
+
+3. Run the development server:
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-4. Login with any demo account above
+5. Login with any demo account above
 
 ## Database Schema
 
@@ -97,6 +108,21 @@ Light pastel theme:
 - Secondary: Peach pastels (#ffd5cd)
 - Success: Green pastels
 - Warning: Yellow pastels
+
+## Database Management
+
+### Reset Database
+To reset the database and start fresh:
+```bash
+rm insurance.db
+npm run dev  # Will recreate with just users and workflows
+```
+
+### Repopulate with Mock Data
+To add comprehensive test data:
+```bash
+npm run populate-db
+```
 
 ## License
 
