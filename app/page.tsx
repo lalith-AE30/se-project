@@ -30,6 +30,12 @@ export default function Home() {
           >
             Admin Workflows
           </a>
+          <a
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[220px]"
+            href="/customer/notifications"
+          >
+            Customer Notifications
+          </a>
         </div>
       </main>
     </div>
