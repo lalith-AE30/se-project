@@ -61,7 +61,7 @@ export default function UnderwriterDashboard() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100">
+    <div className="min-h-screen w-full bg-white text-black">
       <div className="mx-auto max-w-4xl py-10 px-6">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-semibold">Underwriter Dashboard</h1>
@@ -71,7 +71,7 @@ export default function UnderwriterDashboard() {
         <div className="flex items-center gap-3 mb-6">
           <label className="text-sm">Underwriter</label>
           <select
-            className="border rounded px-2 py-1 bg-white dark:bg-zinc-900"
+            className="border rounded px-2 py-1 bg-white"
             value={underwriterId}
             onChange={(e) => setUnderwriterId(e.target.value)}
           >
@@ -80,7 +80,7 @@ export default function UnderwriterDashboard() {
           </select>
           <button
             onClick={load}
-            className="text-sm rounded-full border px-3 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            className="text-sm rounded-full border px-3 py-1 hover:bg-black/5"
           >
             Refresh
           </button>
@@ -94,7 +94,7 @@ export default function UnderwriterDashboard() {
             <div className="text-sm text-zinc-600">No pending applications.</div>
           )}
           {items.map((app) => (
-            <div key={app.id} className="rounded-lg border p-4 bg-white dark:bg-zinc-900">
+            <div key={app.id} className="rounded-lg border p-4 bg-white">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="font-medium">{app.id} · {app.applicantName}</div>
