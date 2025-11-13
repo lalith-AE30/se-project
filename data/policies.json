@@ -1,0 +1,26 @@
+[
+  {
+    "policyNumber": "POL-1001",
+    "status": "active",
+    "coverageStart": "2024-01-01",
+    "coverageEnd": "2026-12-31",
+    "coveredClaimTypes": ["Auto", "Collision", "Glass"],
+    "maxClaimsPerYear": 2
+  },
+  {
+    "policyNumber": "POL-2087",
+    "status": "active",
+    "coverageStart": "2023-06-15",
+    "coverageEnd": "2025-06-14",
+    "coveredClaimTypes": ["Home", "Fire", "Flood"],
+    "maxClaimsPerYear": 1
+  },
+  {
+    "policyNumber": "POL-3099",
+    "status": "inactive",
+    "coverageStart": "2021-01-01",
+    "coverageEnd": "2024-01-01",
+    "coveredClaimTypes": ["Travel", "Medical"],
+    "maxClaimsPerYear": 3
+  }
+]
