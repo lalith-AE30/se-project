@@ -41,8 +41,24 @@ interface FraudCase {
   assignedAnalyst: string;
 }
 
+interface ComplianceReport {
+  id: string;
+  reportType: 'irdai_monthly' | 'irdai_quarterly' | 'gdpr_data_breach' | 'gdpr_privacy_impact' | 'audit_trail';
+  reportName: string;
+  description: string;
+  frequency: 'monthly' | 'quarterly' | 'on_demand' | 'real_time';
+  lastGenerated: string;
+  nextDue: string;
+  status: 'generated' | 'pending' | 'overdue' | 'scheduled';
+  complianceFramework: 'IRDAI' | 'GDPR' | 'ISO 27001';
+  dataFields: string[];
+  generatedBy: string;
+  fileSize: string;
+  downloadUrl?: string;
+}
+
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'policy' | 'sla' | 'fraud'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'policy' | 'sla' | 'fraud' | 'compliance'>('dashboard');
   
   // Policy Application State
   const [formData, setFormData] = useState<FormData>({
@@ -72,6 +88,14 @@ export default function Home() {
   const [fraudCases, setFraudCases] = useState<FraudCase[]>([]);
   const [loadingFraud, setLoadingFraud] = useState(true);
   const [selectedRiskFilter, setSelectedRiskFilter] = useState('all');
+
+  // Compliance State
+  const [complianceReports, setComplianceReports] = useState<ComplianceReport[]>([]);
+  const [loadingCompliance, setLoadingCompliance] = useState(true);
+  const [selectedFrameworkFilter, setSelectedFrameworkFilter] = useState('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'csv'>('pdf');
 
   useEffect(() => {
     // Initialize SLA data
@@ -178,6 +202,99 @@ export default function Home() {
     ];
     setFraudCases(mockFraudData);
     setLoadingFraud(false);
+
+    // Initialize Compliance data
+    const mockComplianceData: ComplianceReport[] = [
+      {
+        id: '1',
+        reportType: 'irdai_monthly',
+        reportName: 'IRDAI Monthly Business Report',
+        description: 'Monthly business performance and policy issuance statistics as required by IRDAI',
+        frequency: 'monthly',
+        lastGenerated: '2025-01-01',
+        nextDue: '2025-02-01',
+        status: 'generated',
+        complianceFramework: 'IRDAI',
+        dataFields: ['Policy count', 'Premium collected', 'Claims settled', 'Solvency ratio'],
+        generatedBy: 'System Automation',
+        fileSize: '2.4 MB',
+        downloadUrl: '#'
+      },
+      {
+        id: '2',
+        reportType: 'irdai_quarterly',
+        reportName: 'IRDAI Quarterly Financial Report',
+        description: 'Quarterly financial statements and compliance metrics for regulatory submission',
+        frequency: 'quarterly',
+        lastGenerated: '2024-12-31',
+        nextDue: '2025-03-31',
+        status: 'pending',
+        complianceFramework: 'IRDAI',
+        dataFields: ['Balance sheet', 'Income statement', 'Cash flow', 'Capital adequacy'],
+        generatedBy: 'System Automation',
+        fileSize: '5.1 MB'
+      },
+      {
+        id: '3',
+        reportType: 'gdpr_data_breach',
+        reportName: 'GDPR Data Breach Register',
+        description: 'Real-time tracking and reporting of data breaches as per GDPR Article 33',
+        frequency: 'real_time',
+        lastGenerated: '2025-01-13',
+        nextDue: 'Immediate upon breach',
+        status: 'generated',
+        complianceFramework: 'GDPR',
+        dataFields: ['Breach incidents', 'Affected users', 'Mitigation steps', 'Notification timeline'],
+        generatedBy: 'System Automation',
+        fileSize: '1.2 MB',
+        downloadUrl: '#'
+      },
+      {
+        id: '4',
+        reportType: 'gdpr_privacy_impact',
+        reportName: 'GDPR Privacy Impact Assessment',
+        description: 'Annual privacy impact assessment and data processing activities report',
+        frequency: 'on_demand',
+        lastGenerated: '2024-12-15',
+        nextDue: '2025-12-15',
+        status: 'scheduled',
+        complianceFramework: 'GDPR',
+        dataFields: ['Data inventory', 'Processing purposes', 'Legal basis', 'Data retention policies'],
+        generatedBy: 'System Automation',
+        fileSize: '3.8 MB'
+      },
+      {
+        id: '5',
+        reportType: 'audit_trail',
+        reportName: 'System Audit Trail Report',
+        description: 'Comprehensive audit log of all system activities for compliance verification',
+        frequency: 'real_time',
+        lastGenerated: '2025-01-13',
+        nextDue: 'Continuous',
+        status: 'generated',
+        complianceFramework: 'ISO 27001',
+        dataFields: ['User access logs', 'Data modifications', 'System changes', 'Failed login attempts'],
+        generatedBy: 'System Automation',
+        fileSize: '8.7 MB',
+        downloadUrl: '#'
+      },
+      {
+        id: '6',
+        reportType: 'irdai_quarterly',
+        reportName: 'IRDAI Claims Settlement Report',
+        description: 'Detailed claims processing and settlement metrics for regulatory compliance',
+        frequency: 'quarterly',
+        lastGenerated: '2024-12-31',
+        nextDue: '2025-01-31',
+        status: 'overdue',
+        complianceFramework: 'IRDAI',
+        dataFields: ['Claims received', 'Claims processed', 'Settlement ratio', 'Average processing time'],
+        generatedBy: 'Manual',
+        fileSize: '4.2 MB'
+      }
+    ];
+    setComplianceReports(mockComplianceData);
+    setLoadingCompliance(false);
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -203,6 +320,12 @@ export default function Home() {
     return case_.riskLevel === selectedRiskFilter;
   });
 
+  const filteredComplianceReports = complianceReports.filter(report => {
+    const frameworkMatch = selectedFrameworkFilter === 'all' || report.complianceFramework === selectedFrameworkFilter;
+    const statusMatch = selectedStatusFilter === 'all' || report.status === selectedStatusFilter;
+    return frameworkMatch && statusMatch;
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'compliant': return 'bg-green-100 text-green-800';
@@ -225,6 +348,54 @@ export default function Home() {
   const getComplianceRate = () => {
     const compliant = metrics.filter(m => m.status === 'compliant').length;
     return metrics.length > 0 ? Math.round((compliant / metrics.length) * 100) : 0;
+  };
+
+  const getComplianceStatusColor = (status: string) => {
+    switch (status) {
+      case 'generated': return 'bg-green-100 text-green-800';
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getFrameworkColor = (framework: string) => {
+    switch (framework) {
+      case 'IRDAI': return 'bg-orange-100 text-orange-800';
+      case 'GDPR': return 'bg-purple-100 text-purple-800';
+      case 'ISO 27001': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const generateReport = async (reportId: string) => {
+    setIsGeneratingReport(true);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    setComplianceReports(prev => prev.map(report => 
+      report.id === reportId 
+        ? { ...report, status: 'generated', lastGenerated: new Date().toISOString().split('T')[0], generatedBy: 'System Automation' }
+        : report
+    ));
+    
+    setIsGeneratingReport(false);
+  };
+
+  const exportReport = (reportId: string, format: 'pdf' | 'excel' | 'csv') => {
+    const report = complianceReports.find(r => r.id === reportId);
+    if (report) {
+      console.log(`Exporting ${report.reportName} as ${format.toUpperCase()}`);
+      alert(`Report ${report.reportName} exported as ${format.toUpperCase()} successfully!`);
+    }
+  };
+
+  const scheduleReport = (reportId: string, frequency: string) => {
+    setComplianceReports(prev => prev.map(report => 
+      report.id === reportId 
+        ? { ...report, frequency: frequency as any, status: 'scheduled' }
+        : report
+    ));
   };
 
   return (
@@ -282,6 +453,16 @@ export default function Home() {
                 }`}
               >
                 Fraud Detection
+              </button>
+              <button
+                onClick={() => setActiveTab('compliance')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'compliance'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Compliance & Reports
               </button>
             </nav>
           </div>
@@ -346,6 +527,24 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
+
+              <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('compliance')}>
+                <div className="flex items-center mb-4">
+                  <div className="bg-purple-100 rounded-full p-3">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h2 className="ml-3 text-xl font-semibold text-gray-900">Compliance & Reports</h2>
+                </div>
+                <p className="text-gray-600 mb-4">Automated IRDAI and GDPR compliance reporting with real-time monitoring and alerts.</p>
+                <div className="flex items-center text-purple-600 font-medium">
+                  Manage Compliance
+                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-8">
@@ -362,6 +561,10 @@ export default function Home() {
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600 mb-2">{fraudCases.filter(c => c.riskLevel === 'high' || c.riskLevel === 'critical').length}</div>
                   <p className="text-gray-600">High-Risk Cases</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">{loadingCompliance ? 0 : complianceReports.filter(r => r.status === 'overdue').length}</div>
+                  <p className="text-gray-600">Overdue Reports</p>
                 </div>
               </div>
             </div>
@@ -816,6 +1019,278 @@ export default function Home() {
                     </div>
                   </div>
                 )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Compliance & Reports View */}
+        {activeTab === 'compliance' && (
+          <div className="space-y-8">
+            {loadingCompliance ? (
+              <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow-md">
+                <div className="text-gray-500">Loading compliance data...</div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="bg-purple-100 rounded-full p-3">
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Reports</p>
+                        <p className="text-2xl font-semibold text-gray-900">{loadingCompliance ? 0 : complianceReports.length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="bg-green-100 rounded-full p-3">
+                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Generated</p>
+                        <p className="text-2xl font-semibold text-gray-900">{loadingCompliance ? 0 : complianceReports.filter(r => r.status === 'generated').length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="bg-yellow-100 rounded-full p-3">
+                        <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Pending</p>
+                        <p className="text-2xl font-semibold text-gray-900">{loadingCompliance ? 0 : complianceReports.filter(r => r.status === 'pending').length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                      <div className="bg-red-100 rounded-full p-3">
+                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Overdue</p>
+                        <p className="text-2xl font-semibold text-gray-900">{loadingCompliance ? 0 : complianceReports.filter(r => r.status === 'overdue').length}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex items-center space-x-2 mr-4">
+                        <label className="text-sm font-medium text-gray-700">Framework:</label>
+                        <select 
+                          value={selectedFrameworkFilter} 
+                          onChange={(e) => setSelectedFrameworkFilter(e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Frameworks</option>
+                          <option value="IRDAI">IRDAI</option>
+                          <option value="GDPR">GDPR</option>
+                          <option value="ISO 27001">ISO 27001</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium text-gray-700">Status:</label>
+                        <select 
+                          value={selectedStatusFilter} 
+                          onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="generated">Generated</option>
+                          <option value="pending">Pending</option>
+                          <option value="scheduled">Scheduled</option>
+                          <option value="overdue">Overdue</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => {
+                          const pendingReports = complianceReports.filter(r => r.status === 'pending' || r.status === 'overdue');
+                          pendingReports.forEach(report => generateReport(report.id));
+                        }}
+                        disabled={isGeneratingReport}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 transition-colors"
+                      >
+                        {isGeneratingReport ? "Generating..." : "Generate All Pending"}
+                      </button>
+                      <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        Schedule Automation
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">Compliance Reports</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Framework</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Generated</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Due</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Size</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredComplianceReports.map((report) => (
+                          <tr key={report.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{report.reportName}</div>
+                                <div className="text-xs text-gray-500">{report.description}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getFrameworkColor(report.complianceFramework)}`}>
+                                {report.complianceFramework}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className="capitalize">{report.frequency.replace('_', ' ')}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.lastGenerated}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.nextDue}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getComplianceStatusColor(report.status)}`}>
+                                {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{report.fileSize}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                {report.status === 'pending' || report.status === 'overdue' ? (
+                                  <button 
+                                    onClick={() => generateReport(report.id)}
+                                    disabled={isGeneratingReport}
+                                    className="text-green-600 hover:text-green-900 disabled:text-green-300"
+                                  >
+                                    Generate
+                                  </button>
+                                ) : report.status === 'generated' ? (
+                                  <>
+                                    <button 
+                                      onClick={() => exportReport(report.id, 'pdf')}
+                                      className="text-blue-600 hover:text-blue-900"
+                                    >
+                                      PDF
+                                    </button>
+                                    <button 
+                                      onClick={() => exportReport(report.id, 'excel')}
+                                      className="text-green-600 hover:text-green-900"
+                                    >
+                                      Excel
+                                    </button>
+                                    <button 
+                                      onClick={() => exportReport(report.id, 'csv')}
+                                      className="text-purple-600 hover:text-purple-900"
+                                    >
+                                      CSV
+                                    </button>
+                                  </>
+                                ) : null}
+                                <button className="text-gray-600 hover:text-gray-900">Details</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {complianceReports.filter(r => r.status === 'overdue').length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-red-900 mb-2">⚠️ Overdue Compliance Reports</h3>
+                    <p className="text-red-700 mb-4">{complianceReports.filter(r => r.status === 'overdue').length} report(s) are overdue and require immediate attention to maintain compliance.</p>
+                    <div className="flex space-x-4">
+                      <button 
+                        onClick={() => {
+                          const overdueReports = complianceReports.filter(r => r.status === 'overdue');
+                          overdueReports.forEach(report => generateReport(report.id));
+                        }}
+                        disabled={isGeneratingReport}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 transition-colors"
+                      >
+                        {isGeneratingReport ? "Generating..." : "Generate Overdue Reports"}
+                      </button>
+                      <button className="px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors">
+                        Send Compliance Alerts
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">🔄 Automation Settings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-md font-medium text-gray-800 mb-3">IRDAI Reports</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-3">
+                          <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-sm text-gray-700">Auto-generate Monthly Business Report</span>
+                        </label>
+                        <label className="flex items-center space-x-3">
+                          <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-sm text-gray-700">Auto-generate Quarterly Financial Report</span>
+                        </label>
+                        <label className="flex items-center space-x-3">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-sm text-gray-700">Email notifications on generation</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-md font-medium text-gray-800 mb-3">GDPR Reports</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-3">
+                          <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-sm text-gray-700">Real-time Data Breach Register</span>
+                        </label>
+                        <label className="flex items-center space-x-3">
+                          <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-sm text-gray-700">Annual Privacy Impact Assessment</span>
+                        </label>
+                        <label className="flex items-center space-x-3">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-sm text-gray-700">Immediate breach notifications</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                      Save Automation Settings
+                    </button>
+                  </div>
+                </div>
               </>
             )}
           </div>
