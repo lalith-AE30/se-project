@@ -13,8 +13,8 @@ export default function Home() {
               Manage claims and renewals without visiting a branch.
             </h1>
             <p className="max-w-2xl text-lg text-zinc-600">
-              Start a new claim, upload supporting documents, and keep coverage active with automated
-              renewal reminders—all from a single, secure portal.
+              Start a new claim, leverage automated eligibility checks, upload supporting documents, and
+              keep coverage active with renewal reminders—all from a single, secure portal.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
@@ -30,7 +30,7 @@ export default function Home() {
                 Schedule renewals
               </Link>
               <div className="flex flex-col text-sm text-zinc-500">
-                <span>Secure uploads • Automated reminders • Instant confirmations</span>
+                <span>Eligibility screening • Secure uploads • Renewal reminders</span>
               </div>
             </div>
           </div>
@@ -39,9 +39,9 @@ export default function Home() {
         <section className="grid gap-6 sm:grid-cols-3">
           {[
             {
-              title: "Guided claim form",
+              title: "Eligibility screening",
               description:
-                "Capture the policy, incident, and claimant details required to kick-start investigation quickly.",
+                "Automatically validate policy status, coverage windows, and duplicate history before a claim is created.",
             },
             {
               title: "Document uploads",

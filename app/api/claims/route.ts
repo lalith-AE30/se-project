@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import path from "path";
 import { promises as fs } from "fs";
+import { checkClaimEligibility } from "@/lib/eligibility";
 
 const CLAIMS_ROOT = path.join(process.cwd(), "data", "claims");
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per file
@@ -28,6 +29,10 @@ type ClaimRecord = ClaimPayload & {
   referenceId: string;
   submittedAt: string;
   attachments: string[];
+  eligibility: {
+    eligible: boolean;
+    reasons: string[];
+  };
 };
 
 function generateReferenceId() {
@@ -135,6 +140,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const eligibility = await checkClaimEligibility({
+      policyNumber: payload.policyNumber!,
+      claimType: payload.claimType!,
+      incidentDate: payload.incidentDate!,
+    });
+
+    if (!eligibility.eligible) {
+      return NextResponse.json(
+        {
+          message: "Claim is not eligible for submission.",
+          reasons: eligibility.reasons,
+        },
+        { status: 409 }
+      );
+    }
+
     const referenceId = generateReferenceId();
     const claimDir = path.join(CLAIMS_ROOT, referenceId);
     await fs.mkdir(claimDir, { recursive: true });
@@ -155,6 +176,10 @@ export async function POST(request: NextRequest) {
       referenceId,
       submittedAt: new Date().toISOString(),
       attachments,
+      eligibility: {
+        eligible: true,
+        reasons: [],
+      },
     };
 
     const metadataPath = path.join(claimDir, "claim.json");

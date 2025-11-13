@@ -22,7 +22,7 @@ type SubmissionState =
   | { status: "idle" }
   | { status: "submitting"; progress: number }
   | { status: "success"; referenceId: string }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; reasons?: string[] };
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_FILE_TYPES = [
@@ -204,13 +204,24 @@ export default function ClaimSubmissionPage() {
       setErrors({});
     } catch (error) {
       const response = (error as any)?.response;
-      if (response?.status === 400 && response.data?.errors) {
-        setErrors(response.data.errors as FieldErrors);
-        setSubmission({
-          status: "error",
-          message: response.data.message ?? "Validation failed.",
-        });
-        return;
+      if (response) {
+        if (response.status === 400 && response.data?.errors) {
+          setErrors(response.data.errors as FieldErrors);
+          setSubmission({
+            status: "error",
+            message: response.data.message ?? "Validation failed.",
+          });
+          return;
+        }
+
+        if (response.status === 409) {
+          setSubmission({
+            status: "error",
+            message: response.data?.message ?? "Claim is not eligible for submission.",
+            reasons: Array.isArray(response.data?.reasons) ? response.data.reasons : undefined,
+          });
+          return;
+        }
       }
 
       setSubmission({
@@ -246,6 +257,13 @@ export default function ClaimSubmissionPage() {
           <div className="mt-6 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
             <h2 className="text-lg font-semibold">Unable to submit claim</h2>
             <p className="mt-1 text-sm">{submission.message}</p>
+            {submission.reasons && submission.reasons.length > 0 && (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
+                {submission.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
