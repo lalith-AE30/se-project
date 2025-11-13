@@ -10,22 +10,27 @@ export default function Home() {
               Insurance Self-Service
             </span>
             <h1 className="text-4xl font-semibold leading-tight text-zinc-900 sm:text-5xl">
-              Submit your claim online in minutes.
+              Manage claims and renewals without visiting a branch.
             </h1>
             <p className="max-w-2xl text-lg text-zinc-600">
-              Provide your claim details, upload supporting documents, and receive a reference ID
-              instantly. No branch visits, no waiting—just a streamlined claims experience from any
-              device.
+              Start a new claim, upload supporting documents, and keep coverage active with automated
+              renewal reminders—all from a single, secure portal.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
                 href="/claims/submit"
                 className="inline-flex items-center justify-center rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
               >
-                File a claim now
+                File a claim
+              </Link>
+              <Link
+                href="/renewals"
+                className="inline-flex items-center justify-center rounded-full border border-zinc-300 px-6 py-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-900"
+              >
+                Schedule renewals
               </Link>
               <div className="flex flex-col text-sm text-zinc-500">
-                <span>Secure upload • Accessible forms • Instant confirmation</span>
+                <span>Secure uploads • Automated reminders • Instant confirmations</span>
               </div>
             </div>
           </div>
@@ -34,17 +39,19 @@ export default function Home() {
         <section className="grid gap-6 sm:grid-cols-3">
           {[
             {
-              title: "Guided form",
-              description: "Step-by-step prompts ensure we capture the details needed to start your claim quickly.",
+              title: "Guided claim form",
+              description:
+                "Capture the policy, incident, and claimant details required to kick-start investigation quickly.",
             },
             {
               title: "Document uploads",
               description:
-                "Attach photos, invoices, or reports with real-time progress feedback and validation.",
+                "Attach photos, invoices, or reports with instant validation, upload progress, and secure storage.",
             },
             {
-              title: "Status tracking",
-              description: "Receive a confirmation ID immediately and track updates as your claim progresses.",
+              title: "Renewal automation",
+              description:
+                "Configure lead times and track reminder status so renewals go out before coverage lapses.",
             },
           ].map((card) => (
             <article
