@@ -1,200 +1,104 @@
-import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-import path from "path";
-import { promises as fs } from "fs";
-import { checkClaimEligibility } from "@/lib/eligibility";
+import { NextResponse } from 'next/server';
+import db from '@/lib/db';
 
-const CLAIMS_ROOT = path.join(process.cwd(), "data", "claims");
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per file
-const ALLOWED_MIME_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-]);
-
-type ClaimPayload = {
-  policyNumber: string;
-  claimantName: string;
-  claimantEmail: string;
-  incidentDate: string;
-  incidentTime: string;
-  incidentLocation: string;
-  claimType: string;
-  description: string;
-  additionalNotes?: string;
-};
-
-type ClaimRecord = ClaimPayload & {
-  referenceId: string;
-  submittedAt: string;
-  attachments: string[];
-  eligibility: {
-    eligible: boolean;
-    reasons: string[];
-  };
-};
-
-function generateReferenceId() {
-  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-  const random = crypto.randomBytes(3).toString("hex");
-  return `CLM-${timestamp}-${random}`;
-}
-
-function sanitizeFilename(filename: string) {
-  return filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-function validatePayload(payload: Partial<ClaimPayload>) {
-  const requiredFields: (keyof ClaimPayload)[] = [
-    "policyNumber",
-    "claimantName",
-    "claimantEmail",
-    "incidentDate",
-    "incidentTime",
-    "incidentLocation",
-    "claimType",
-    "description",
-  ];
-
-  const missing = requiredFields.filter((field) => {
-    const value = payload[field];
-    return !value || (typeof value === "string" && value.trim() === "");
-  });
-
-  if (missing.length > 0) {
-    return {
-      valid: false,
-      errors: missing.reduce<Record<string, string>>((acc, field) => {
-        acc[field] = "This field is required.";
-        return acc;
-      }, {}),
-    } as const;
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const role = searchParams.get('role');
+  const userId = searchParams.get('userId');
+  
+  let claims;
+  
+  if (role === 'customer') {
+    claims = db.prepare('SELECT c.*, p.policy_number FROM claims c JOIN policies p ON c.policy_id = p.id WHERE c.customer_id = ? ORDER BY c.created_at DESC').all(userId);
+  } else if (role === 'adjuster') {
+    claims = db.prepare('SELECT c.*, p.policy_number, u.name as customer_name FROM claims c JOIN policies p ON c.policy_id = p.id JOIN users u ON c.customer_id = u.id WHERE c.status IN (?, ?) OR c.assigned_to = ? ORDER BY c.created_at DESC').all('submitted', 'under_review', userId);
+  } else if (role === 'analyst') {
+    claims = db.prepare('SELECT c.*, p.policy_number, u.name as customer_name FROM claims c JOIN policies p ON c.policy_id = p.id JOIN users u ON c.customer_id = u.id WHERE c.is_flagged = 1 ORDER BY c.created_at DESC').all();
+  } else {
+    claims = db.prepare('SELECT c.*, p.policy_number, u.name as customer_name FROM claims c JOIN policies p ON c.policy_id = p.id JOIN users u ON c.customer_id = u.id ORDER BY c.created_at DESC').all();
   }
-
-  const email = payload.claimantEmail ?? "";
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) {
-    return {
-      valid: false,
-      errors: {
-        claimantEmail: "Enter a valid email address.",
-      },
-    } as const;
-  }
-
-  return { valid: true } as const;
+  
+  return NextResponse.json({ claims });
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const payload: Partial<ClaimPayload> = {
-      policyNumber: formData.get("policyNumber")?.toString() ?? "",
-      claimantName: formData.get("claimantName")?.toString() ?? "",
-      claimantEmail: formData.get("claimantEmail")?.toString() ?? "",
-      incidentDate: formData.get("incidentDate")?.toString() ?? "",
-      incidentTime: formData.get("incidentTime")?.toString() ?? "",
-      incidentLocation: formData.get("incidentLocation")?.toString() ?? "",
-      claimType: formData.get("claimType")?.toString() ?? "",
-      description: formData.get("description")?.toString() ?? "",
-      additionalNotes: formData.get("additionalNotes")?.toString() ?? undefined,
-    };
-
-    const validation = validatePayload(payload);
-    if (!validation.valid) {
-      return NextResponse.json(
-        {
-          message: "Validation failed.",
-          errors: validation.errors,
-        },
-        { status: 400 }
-      );
-    }
-
-    const files = formData.getAll("supportingDocuments");
-    const invalidFiles: string[] = [];
-    const tooLarge: string[] = [];
-
-    for (const entry of files) {
-      if (entry instanceof File) {
-        if (!ALLOWED_MIME_TYPES.has(entry.type)) {
-          invalidFiles.push(entry.name);
-        }
-        if (entry.size > MAX_FILE_SIZE_BYTES) {
-          tooLarge.push(entry.name);
-        }
-      }
-    }
-
-    if (invalidFiles.length || tooLarge.length) {
-      return NextResponse.json(
-        {
-          message: "File validation failed.",
-          errors: {
-            invalidTypes: invalidFiles,
-            tooLarge,
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    const eligibility = await checkClaimEligibility({
-      policyNumber: payload.policyNumber!,
-      claimType: payload.claimType!,
-      incidentDate: payload.incidentDate!,
-    });
-
-    if (!eligibility.eligible) {
-      return NextResponse.json(
-        {
-          message: "Claim is not eligible for submission.",
-          reasons: eligibility.reasons,
-        },
-        { status: 409 }
-      );
-    }
-
-    const referenceId = generateReferenceId();
-    const claimDir = path.join(CLAIMS_ROOT, referenceId);
-    await fs.mkdir(claimDir, { recursive: true });
-
-    const attachments: string[] = [];
-    for (const entry of files) {
-      if (entry instanceof File) {
-        const safeName = sanitizeFilename(entry.name || "attachment");
-        const buffer = Buffer.from(await entry.arrayBuffer());
-        const filePath = path.join(claimDir, safeName);
-        await fs.writeFile(filePath, buffer);
-        attachments.push(path.relative(CLAIMS_ROOT, filePath));
-      }
-    }
-
-    const claimRecord: ClaimRecord = {
-      ...(payload as ClaimPayload),
-      referenceId,
-      submittedAt: new Date().toISOString(),
-      attachments,
-      eligibility: {
-        eligible: true,
-        reasons: [],
-      },
-    };
-
-    const metadataPath = path.join(claimDir, "claim.json");
-    await fs.writeFile(metadataPath, JSON.stringify(claimRecord, null, 2), "utf-8");
-
-    // Placeholder for notification implementation.
-
-    return NextResponse.json({ referenceId }, { status: 201 });
-  } catch (error) {
-    console.error("Failed to process claim submission", error);
-    return NextResponse.json(
-      {
-        message: "An unexpected error occurred while processing the claim.",
-      },
-      { status: 500 }
+export async function POST(request: Request) {
+  const { policyId, customerId, type, amount, description, documents } = await request.json();
+  
+  const claimNumber = `CLM-${Date.now()}`;
+  
+  // Check eligibility
+  const policy = db.prepare('SELECT * FROM policies WHERE id = ? AND status = ?').get(policyId, 'active') as any;
+  if (!policy) {
+    return NextResponse.json({ error: 'Policy not active or not found' }, { status: 400 });
+  }
+  
+  if (amount > policy.coverage_amount) {
+    return NextResponse.json({ error: 'Claim amount exceeds coverage' }, { status: 400 });
+  }
+  
+  // Check for duplicate claims
+  const duplicate = db.prepare(
+    'SELECT id FROM claims WHERE policy_id = ? AND type = ? AND status NOT IN (?, ?) AND created_at > datetime("now", "-30 days")'
+  ).get(policyId, type, 'rejected', 'paid') as any;
+  
+  if (duplicate) {
+    return NextResponse.json({ error: 'Duplicate claim detected' }, { status: 400 });
+  }
+  
+  // Calculate fraud score (simplified)
+  let fraudScore = 0;
+  if (amount > policy.coverage_amount * 0.8) fraudScore += 30;
+  if (documents?.split(',').length < 2) fraudScore += 20;
+  
+  const recent = db.prepare('SELECT COUNT(*) as count FROM claims WHERE customer_id = ? AND created_at > datetime("now", "-90 days")').get(customerId) as any;
+  if (recent.count > 2) fraudScore += 50;
+  
+  const isFlagged = fraudScore >= 50;
+  
+  const result = db.prepare(
+    'INSERT INTO claims (claim_number, policy_id, customer_id, type, amount, description, documents, status, fraud_score, is_flagged) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(claimNumber, policyId, customerId, type, amount, description, documents, 'submitted', fraudScore, isFlagged ? 1 : 0);
+  
+  // Auto-assign to adjuster or analyst
+  const assignRole = isFlagged ? 'analyst' : 'adjuster';
+  const assignee = db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').get(assignRole) as any;
+  
+  if (assignee) {
+    db.prepare('UPDATE claims SET assigned_to = ?, status = ? WHERE id = ?').run(assignee.id, 'under_review', result.lastInsertRowid);
+    
+    db.prepare('INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)').run(
+      assignee.id,
+      isFlagged ? 'High-Risk Claim Flagged' : 'New Claim Submitted',
+      `Claim ${claimNumber} requires ${isFlagged ? 'investigation' : 'review'}`,
+      'claim'
     );
   }
+  
+  // Create SLA tracking
+  db.prepare('INSERT INTO sla_tracking (entity_type, entity_id, sla_hours) VALUES (?, ?, ?)').run('claim', result.lastInsertRowid, 72);
+  
+  return NextResponse.json({ claimId: result.lastInsertRowid, claimNumber, fraudScore, isFlagged });
+}
+
+export async function PATCH(request: Request) {
+  const { id, status } = await request.json();
+  
+  const now = new Date().toISOString();
+  
+  db.prepare('UPDATE claims SET status = ?, resolved_at = ? WHERE id = ?').run(status, now, id);
+  
+  const claim = db.prepare('SELECT * FROM claims WHERE id = ?').get(id) as any;
+  
+  // Notify customer
+  db.prepare('INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)').run(
+    claim.customer_id,
+    `Claim ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+    `Your claim ${claim.claim_number} has been ${status}`,
+    'claim'
+  );
+  
+  // Update SLA tracking
+  db.prepare('UPDATE sla_tracking SET completed_at = ? WHERE entity_type = ? AND entity_id = ?').run(now, 'claim', id);
+  
+  return NextResponse.json({ success: true });
 }
