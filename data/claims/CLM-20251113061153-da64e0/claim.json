@@ -1,0 +1,15 @@
+{
+  "policyNumber": "123675",
+  "claimantName": "khush",
+  "claimantEmail": "khush3131@gmail.com",
+  "incidentDate": "2025-07-31",
+  "incidentTime": "03:40",
+  "incidentLocation": "banshankari",
+  "claimType": "road accident",
+  "description": "got hit by a car",
+  "referenceId": "CLM-20251113061153-da64e0",
+  "submittedAt": "2025-11-13T06:11:53.756Z",
+  "attachments": [
+    "CLM-20251113061153-da64e0\\Problem_statemt_final.pdf"
+  ]
+}
