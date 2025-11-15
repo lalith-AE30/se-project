@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   
   // Check for duplicate claims
   const duplicate = db.prepare(
-    'SELECT id FROM claims WHERE policy_id = ? AND type = ? AND status NOT IN (?, ?) AND created_at > datetime("now", "-30 days")'
+    "SELECT id FROM claims WHERE policy_id = ? AND type = ? AND status NOT IN (?, ?) AND created_at > datetime('now', '-30 days')"
   ).get(policyId, type, 'rejected', 'paid') as any;
   
   if (duplicate) {
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   if (amount > policy.coverage_amount * 0.8) fraudScore += 30;
   if (documents?.split(',').length < 2) fraudScore += 20;
   
-  const recent = db.prepare('SELECT COUNT(*) as count FROM claims WHERE customer_id = ? AND created_at > datetime("now", "-90 days")').get(customerId) as any;
+  const recent = db.prepare("SELECT COUNT(*) as count FROM claims WHERE customer_id = ? AND created_at > datetime('now', '-90 days')").get(customerId) as any;
   if (recent.count > 2) fraudScore += 50;
   
   const isFlagged = fraudScore >= 50;
