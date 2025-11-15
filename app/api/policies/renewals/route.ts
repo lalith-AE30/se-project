@@ -11,7 +11,7 @@ export async function GET() {
   // Send renewal reminders
   for (const policy of policies) {
     const existingNotification = db.prepare(
-      'SELECT id FROM notifications WHERE user_id = ? AND message LIKE ? AND created_at > datetime("now", "-7 days")'
+      "SELECT id FROM notifications WHERE user_id = ? AND message LIKE ? AND created_at > datetime('now', '-7 days')"
     ).get(policy.customer_id, `%${policy.policy_number}%renewal%`) as any;
     
     if (!existingNotification) {
