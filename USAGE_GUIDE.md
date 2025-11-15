@@ -10,7 +10,20 @@ npm run populate-db
 
 This adds 5 policies, 6 claims, notifications, and more. See `MOCK_DATA.md` for details.
 
-## 1. Login
+## 1. Create Account or Login
+
+### Option A: Register a New Account
+1. Visit http://localhost:3000
+2. Click "Register here" link
+3. Fill in your details:
+   - Full name
+   - Email address
+   - Password (minimum 6 characters)
+   - Select account type (Customer, Underwriter, etc.)
+4. Click "Register"
+5. You'll be automatically logged in
+
+### Option B: Use Demo Accounts
 Visit http://localhost:3000 and login with any demo account:
 - **Customer**: customer@test.com
 - **Underwriter**: underwriter@insurance.com

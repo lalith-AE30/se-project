@@ -27,9 +27,15 @@ A comprehensive Next.js application for automated policy and claims management w
 5. **Manager**: Monitor SLA performance across workflows
 6. **Admin**: Define workflows and generate compliance reports
 
-## Demo Accounts
+## Getting Started
 
-All accounts use password: `password123`
+### Register a New Account
+
+Visit [http://localhost:3000/register](http://localhost:3000/register) to create your own account with any role.
+
+### Demo Accounts
+
+Alternatively, use pre-configured demo accounts (password: `password123`):
 
 - customer@test.com - Customer
 - underwriter@insurance.com - Underwriter
@@ -42,11 +48,11 @@ All accounts use password: `password123`
 
 - **Framework**: Next.js 16 (App Router)
 - **Database**: SQLite (better-sqlite3)
-- **Authentication**: bcryptjs
+- **Authentication**: bcryptjs with user registration
 - **Styling**: Tailwind CSS with pastel light theme
 - **Language**: TypeScript
 
-## Getting Started
+## Setup Instructions
 
 1. Install dependencies:
 ```bash

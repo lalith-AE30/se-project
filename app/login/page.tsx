@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -66,7 +67,16 @@ export default function Home() {
           </button>
         </form>
         
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm">
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+              Register here
+            </Link>
+          </p>
+        </div>
+        
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm">
           <p className="font-semibold mb-2">Demo Accounts (password: password123):</p>
           <ul className="space-y-1 text-gray-700">
             <li>• customer@test.com - Customer</li>

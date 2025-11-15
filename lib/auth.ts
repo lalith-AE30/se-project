@@ -22,3 +22,13 @@ export function getUser(id: number): User | null {
   const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(id) as any;
   return user || null;
 }
+
+export function getAllUsers(): User[] {
+  const users = db.prepare('SELECT id, email, name, role FROM users ORDER BY created_at DESC').all() as any[];
+  return users;
+}
+
+export function getUsersByRole(role: string): User[] {
+  const users = db.prepare('SELECT id, email, name, role FROM users WHERE role = ? ORDER BY created_at DESC').all(role) as any[];
+  return users;
+}
